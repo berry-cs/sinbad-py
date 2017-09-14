@@ -1,5 +1,5 @@
 '''
-A data plug-in for CSV-based data sources (supports TSV also)
+A Sinbad plug-in for CSV-based data sources (supports TSV also)
 '''
 
 import csv
@@ -106,5 +106,7 @@ class CSV_Data_Factory(Base_Data_Factory):
         s = s.strip()
         if s == '':
             s = '_col_{}'.format(i)
+        if s[0].isdigit():      # normalize to identifier naming rules because jsonpath_rw is picky
+            s = '_' + s
         return s
         
