@@ -21,10 +21,10 @@ class UtilTest(unittest.TestCase):
         self.assertNotEqual(hash_string(s1), hash_string(s3))
 
     def test_paths(self):
-        self.assertTrue(smellsLikeURL("http://cs.berry.edu"))
-        self.assertTrue(smellsLikeURL("https://cs.berry.edu"))
-        self.assertFalse(smellsLikeURL("wss://satori.org"))
-        self.assertFalse(smellsLikeURL("/Users/foo/bar.txt"))
+        self.assertTrue(smells_like_url("http://cs.berry.edu"))
+        self.assertTrue(smells_like_url("https://cs.berry.edu"))
+        self.assertFalse(smells_like_url("wss://satori.org"))
+        self.assertFalse(smells_like_url("/Users/foo/bar.txt"))
 
     def test_create_input(self):
         fp, pth, enc = create_input("http://cs.berry.edu")
