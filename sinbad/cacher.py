@@ -130,9 +130,9 @@ class Cacher:
         Returns the path to the cached data file.'''
         try:
             if not fp:
-                if U.smellsLikeURL(path):
+                if U.smells_like_url(path):
                     print("Downloading {}...".format(path))
-                fp = U.create_input(path)
+                fp, _, _ = U.create_input(path)
             data = fp.read() 
         except OSError as err:
             print("OSError: {}".format(err.reason))
@@ -278,7 +278,7 @@ class Cacher:
         #  if it smells like a URL and the cacher specific setting is not set 
         #  to never cache
         return (not subtag.startswith("main")) or \
-                U.smellsLikeURL(path) and self.cache_expiration != NEVER_CACHE
+                U.smells_like_url(path) and self.cache_expiration != NEVER_CACHE
     
     
     def __get_cache_index_file(self, tag):
@@ -339,7 +339,7 @@ def data_valid(entry):
     '''Check to see if the entry's cachedata refers to an actual readable file.'''
     return entry["cachedata"] and \
             os.path.isfile(entry["cachedata"]) and \
-            U.create_input(entry["cachedata"]) is not None
+            U.create_input(entry["cachedata"])[0] is not None
 
 
 def is_expired(entry, expiration):

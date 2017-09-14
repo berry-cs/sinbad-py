@@ -22,7 +22,7 @@ def current_time():
     return int(time.time())
 
 
-def smellsLikeURL(path):
+def smells_like_url(path):
     '''Determine if the given path seems like a URL.
     
     Currently, only things that start off http://
@@ -32,7 +32,7 @@ def smellsLikeURL(path):
         (path.startswith("http") or path.startswith("ftp")) 
 
 
-def smellsLikeZip(path):
+def smells_like_zip(path):
     return path.find(".zip") >= 0
 
 
@@ -57,7 +57,7 @@ def create_input(path):
     if not path: return None
     
     charset = None
-    if smellsLikeURL(path):
+    if smells_like_url(path):
         req = urllib.request.Request(path, 
                                      data=None,
                                      headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'})
