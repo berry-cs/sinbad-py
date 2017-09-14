@@ -25,8 +25,7 @@ class PluginXMLTest(unittest.TestCase):
     
     def test_people(self):
         for path in ['data/people.xml',
-                     #'https://raw.githubusercontent.com/berry-cs/sinbad-py/master/tests/data/people.xml']:
-                     ]:
+                     'https://raw.githubusercontent.com/berry-cs/sinbad-py/master/tests/data/people.xml']:
             df = XML_Data_Factory()
             with create_input(path)[0] as fp:
                 data = df.load_data(fp)

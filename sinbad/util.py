@@ -37,12 +37,10 @@ def smellsLikeZip(path):
 
 
 def create_input(path):
-    '''Returns a triple containing a file-type object
-    for the given path, a potentially redirected path name,
-    and an encoding.
+    '''Returns a triple, ( fp, path, enc ), containing a file-type object
+    for the given path, a potentially redirected path name, and an encoding.
     
-    If the path is a normal file, produces a file-object
-    for that file.
+    If the path is a normal file, produces a file-object for that file.
     
     If the path is a URL, makes a request to that URL and
     returns an input stream to read the response.
