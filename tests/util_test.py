@@ -2,6 +2,7 @@
 import unittest
 from sinbad.util import *
 
+
 class Test(unittest.TestCase):
 
     def setUp(self):
