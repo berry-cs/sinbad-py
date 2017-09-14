@@ -4,7 +4,7 @@ import unittest
 from sinbad.plugin_json import *
 from sinbad.util import create_input
 
-class Test(unittest.TestCase):
+class PluginJsonTest(unittest.TestCase):
 
     def setUp(self):
         pass
@@ -33,7 +33,7 @@ class Test(unittest.TestCase):
                                  'id,first_name,last_name,email,gender,ip_address'.split(','))
                         
             self.assertEqual(data[2],
-                             {"id":3,"first_name":"Corny","last_name":"Chillcot",
+                             {"id":"3", "first_name":"Corny", "last_name":"Chillcot",
                               "email":"cchillcot2@google.pl","gender":"Male",
                               "ip_address":"10.84.116.69"})
 

@@ -1,9 +1,11 @@
 
+
 import unittest
+from collections import OrderedDict
 from sinbad.util import *
 
 
-class Test(unittest.TestCase):
+class UtilTest(unittest.TestCase):
 
     def setUp(self):
         pass
@@ -46,6 +48,21 @@ class Test(unittest.TestCase):
                            "boo" : [{ "who" : "far" , "foo" : "2384", "_1" : "one" },
                                     { "_23" : 23 }] } )
     
+    def test_collapse_dicts(self):
+        self.assertEqual( collapse_dicts({ 'a' : { 'b' : { 'c' : "blah", 'd' : "blah" } } }),
+                          { 'c' : "blah", 'd' : "blah" } )
+        
+        self.assertEqual( collapse_dicts(OrderedDict( [('a', 
+                                                        OrderedDict([('b',
+                                                                      OrderedDict([('c', "blah"), 
+                                                                                   ('d', "blah")]))]))])),
+                          OrderedDict([('c', "blah"), ('d', "blah")]),
+                          "works with OrderedDict" )
+        
+# TODO: should it be more aggressive than this
+        self.assertEqual( collapse_dicts({ 'a' : [ { 'b' : { 'c' : "blah", 'd' : "blah" } } ] }),
+                          [ { 'b' : { 'c' : "blah", 'd' : "blah" } } ],
+                          "doesn't go inside lists" ) 
 
 
 if __name__ == "__main__":

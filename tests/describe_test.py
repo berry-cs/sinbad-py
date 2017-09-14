@@ -3,7 +3,7 @@ import unittest
 from sinbad.describe import *
 
 
-class Test(unittest.TestCase):
+class DescribeTest(unittest.TestCase):
 
     def setUp(self):
         pass

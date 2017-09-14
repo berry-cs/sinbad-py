@@ -5,7 +5,7 @@ A Sinbad plug-in for JSON-based data sources
 
 import json
 from sinbad.plugin_base import *
-from sinbad.util import normalize_keys
+from sinbad.util import collapse_dicts, normalize_keys
 
 class JSON_Infer(Base_Infer):
     
@@ -20,5 +20,7 @@ class JSON_Infer(Base_Infer):
 class JSON_Data_Factory(Base_Data_Factory):
     
     def load_data(self, fp):
-        return normalize_keys(json.loads(fp.read().decode()))
+        return normalize_keys(collapse_dicts(json.loads(fp.read().decode(),
+                                                        parse_int = str,
+                                                        parse_float = str)))
 

@@ -4,7 +4,7 @@ from sinbad.cacher import *
 from io import BytesIO
 
 
-class Test(unittest.TestCase):
+class CacherTest(unittest.TestCase):
     def setUp(self):
         pass
 

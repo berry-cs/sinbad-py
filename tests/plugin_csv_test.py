@@ -4,7 +4,7 @@ import unittest
 from sinbad.plugin_csv import *
 from sinbad.util import create_input
 
-class Test(unittest.TestCase):
+class PluginCSVTest(unittest.TestCase):
 
     def setUp(self):
         pass
