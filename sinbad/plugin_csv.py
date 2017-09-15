@@ -47,8 +47,9 @@ class CSV_Data_Factory(Base_Data_Factory):
         
         if str_data.startswith('\ufeff'):  # BOM, if already decoded as utf8
             str_data = str_data.lstrip('\ufeff')
+        str_data = str_data.replace('\r', '\n')
         
-        sample = str_data[:10000]    
+        sample = str_data[:10000]
         snuffy = csv.Sniffer()
         if not snuffy.has_header(sample) and not self.field_names:
             # see how many columns there are and provide auto-numbered names
@@ -61,7 +62,7 @@ class CSV_Data_Factory(Base_Data_Factory):
         sfp = io.StringIO(str_data)
         if self.delimiter:
             data = csv.DictReader(sfp, fieldnames = self.field_names, delimiter = self.delimiter, restkey='_extra_', restval='')
-            
+
         if data.fieldnames:
             data.fieldnames = [ self.__fix_heading(i, n) for i, n in enumerate(data.fieldnames)]
         

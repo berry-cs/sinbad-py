@@ -239,8 +239,9 @@ class Cacher:
     
     
     def clear_cache(self):
-        '''Delete the entire cache directory being maintained by this Cacher.'''        
-        shutil.rmtree(self.cache_directory)
+        '''Delete the entire cache directory being maintained by this Cacher.'''  
+        if os.path.isdir(self.cache_directory):    
+            shutil.rmtree(self.cache_directory)
             
     
     def cache_byte_data(self, tag, data, encoding=None):

@@ -6,6 +6,7 @@ from sinbad.datasource import *
 class DataSourceTest(unittest.TestCase):
 
     def setUp(self):
+        Data_Source.clear_cache()
         pass
 
     def tearDown(self):

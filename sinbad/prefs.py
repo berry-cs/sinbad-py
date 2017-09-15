@@ -14,6 +14,8 @@ from appdirs import user_data_dir
 from tkinter import *
 from tkinter.ttk import Separator
 
+from sinbad import util
+
 
 def preferences(**kw_args):
     PrefsGUI(**kw_args)
@@ -89,6 +91,7 @@ class PrefsGUI:
         btn = Button(root, text="Save", default=ACTIVE, command=self.save_prefs)
         btn.grid(row=4, columnspan=2)
         root.attributes('-topmost', True)
+        util.tk_to_front(root)
         root.lift()
         btn.focus()
         root.bind("<Return>", self.save_prefs)

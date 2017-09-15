@@ -10,6 +10,11 @@ import urllib.parse
 import random
 import json
 import io
+import os
+
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
 
 import sinbad.cacher as C
 import sinbad.describe as D
@@ -61,36 +66,55 @@ class Data_Source:
     @staticmethod
     def connect(path, format = None):
         if format is None:  # infer it...
-            for p in DataSource.plugins:
+            for p in Data_Source.plugins:
                 if p["data-infer"].matched_by(path):
-                    return DataSource(path, path, p["type-ext"], p)
+                    return Data_Source(path, path, p["type-ext"], p)
             raise SinbadError('could not infer data format for {}'.format(path))
         else:
             type_ext = format.lower()
-            for p in DataSource.plugins:
+            for p in Data_Source.plugins:
                 if p["type-ext"] == type_ext:
-                    return DataSource(path, path, type_ext, p)
+                    return Data_Source(path, path, type_ext, p)
     
             raise SinbadError("no data source plugin for type {}".format(type_ext))
             
         
     @staticmethod
     def connect_load(path, format = None):
-        ds = DataSource.connect(path, format = format)
+        ds = Data_Source.connect(path, format = format)
         return ds.load()
 
     @staticmethod
     def connect_as(type_ext, path):
-        return DataSource.connect(path, format = type_ext)    
+        return Data_Source.connect(path, format = type_ext)    
     
     @staticmethod
     def connect_load_as(type_ext, path):
-        return DataSource.connect_load(path, format = type_ext) 
+        return Data_Source.connect_load(path, format = type_ext) 
+    
+    @staticmethod
+    def connect_gui(format = None):
+        root = tk.Tk()
+        root.withdraw()
+        U.tk_to_front(root)
+        
+        file_path = filedialog.askopenfilename()
+        file_path = os.path.abspath(file_path)
+        messagebox.showinfo("Selected file path", file_path + "\nSelect and copy the file path above for use with connect()")
+        root.destroy()
+
+        return Data_Source.connect(file_path, format=format)
+
+    
+    @staticmethod
+    def connect_gui_as(type_ext):
+        return Data_Source.connect_gui(format = type_ext)
     
         
     @staticmethod
     def connect_using(spec_path):
         return load_spec(U.create_input(spec_path)[0])   
+
 
     def clear_cache(self = None):
         '''
@@ -703,9 +727,9 @@ def load_spec(fp):
     
     path = spec["path"]
     if spec["format"]:
-        ds = DataSource.connect(path, format = spec["format"])
+        ds = Data_Source.connect(path, format = spec["format"])
     else:
-        ds = DataSource.connect(path)
+        ds = Data_Source.connect(path)
         
     ds.name = spec.get("name")
     ds.info_text = spec.get("description")

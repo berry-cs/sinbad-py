@@ -3,6 +3,10 @@ import hashlib
 import time
 import urllib.request
 
+from os import system
+from platform import system as platform
+
+
 def hash_string(str):
     '''Return a simple hash of the given string.
     
@@ -124,4 +128,12 @@ def collapse_dicts(data):
             data = first_value
         
         return data
+
+
+
+def tk_to_front(root):
+    root.focus_force()
+    
+    if platform() == 'Darwin':  # How Mac OS X is identified by Python
+        system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
 
