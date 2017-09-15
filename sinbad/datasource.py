@@ -100,7 +100,7 @@ class Data_Source:
         if not self:
             C.default_cacher().clear_cache()
         else:
-            return self.cacher.clearCache()
+            return self.cacher.clear_cache()
 
 
     # constructor --------------------------------------------------------
@@ -110,6 +110,8 @@ class Data_Source:
         Data_Source.connect...() to instantiate objects of this class
         '''
         
+        self.cacher = C.default_cacher()
+
         self.name = name
         self.path = path
         self.format_type = typeExt
@@ -125,7 +127,8 @@ class Data_Source:
         self.data_infer = plugin["data-infer"]
         self.data_factory = plugin["data-factory"]()
         self.data_obj = None
-        self.cacher = C.default_cacher()
+        self.is_sampled = False    # keeps track of whether self.data_obj is a sample of the actual data
+        
         
         self.option_settings = {}  # these are generic options for Data_Source, the data_factory 
                                    # also maintains its own set of options (see plugin_base.py)
@@ -195,7 +198,8 @@ class Data_Source:
     
         if self.__loaded and \
                 not self.cacher.is_stale(full_path, subtag) and \
-                not force_reload:
+                not force_reload and \
+                not self.is_sampled:
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
             return self
         
@@ -242,13 +246,14 @@ class Data_Source:
         for k, v in self.data_infer.options.items():
             self.data_factory.set_option(k, v)
         self.data_obj = self.data_factory.load_data(fp)
+        self.is_sampled = False
         
         self.__loaded = True
         self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
         return self
     
 
-    def load_sample(self, max_elts = 25, force_reload = False):
+    def load_sample(self, max_elts = 25, random_seed = None, force_reload = False):
         '''
         Load and then sample from all available data. See sample_data().
         The sampled data is cached. To reload the entire data and
@@ -274,18 +279,19 @@ class Data_Source:
         
         if 'file-entry' in self.option_settings:
             fe_value = self.option_settings['file-entry']
-            subtag = "sample:{}-{}".format(fe_value, max_elts)
+            subtag = "sample:{}-{}_{}".format(fe_value, max_elts, random_seed)
         else:
-            subtag = "sample:{}".format(max_elts)
+            subtag = "sample:{}_{}".format(max_elts, random_seed)
             
         sample_path = self.cacher.resolve_path(full_path, subtag)
         if not sample_path or force_reload:
             self.load(force_reload = force_reload)
             if self.__loaded:
-                sampled = self.sample_data(self.data_obj, max_elts)
+                sampled = self.sample_data(self.data_obj, max_elts, random_seed=random_seed)
                 fp = io.BytesIO(json.dumps(sampled).encode()) 
                 self.cacher.add_to_cache(full_path, subtag, fp)
                 self.data_obj = sampled
+                self.is_sampled = True
         else: # sample seems to be cached
             fp, _, _ = U.create_input(sample_path) 
             self.data_obj = json.loads(fp.read().decode())
@@ -295,12 +301,12 @@ class Data_Source:
         return self
     
 
-    def load_fresh_sample(self, max_elts = 25):
+    def load_fresh_sample(self, max_elts = 25, random_seed = None):
         '''
         Reload the entire data and resample it, rather than using the cached
         sample.
         '''
-        return self.load_sample(max_elts = max_elts, force_reload = True)
+        return self.load_sample(max_elts = max_elts, random_seed = random_seed, force_reload = True)
     
 
 
@@ -449,12 +455,15 @@ class Data_Source:
 
     # sampling -------------------------------------------------------------
 
-    def sample_data(self, obj, max_elts):
+    def sample_data(self, obj, max_elts, random_seed = None):
         '''
         Randomly samples up to 'max_elts' number of elements from any lists
         that are in the given JSON-like data object. Note that the object is
         recursively traversed, so all lists and sublists are sampled as well.
         '''
+        if random_seed:
+            random.seed(random_seed)
+        
         if isinstance(obj, list):
             if len(obj) > max_elts:  # need to sample down
                 obj = [ obj[i] for i in sorted(random.sample(range(len(obj)), max_elts)) ]
