@@ -27,6 +27,7 @@ from sinbad import plugin_satori
 from sinbad import plugin_xml
 
 from sinbad.sinbad_error import *
+from sinbad.dot_printer import Dot_Printer
 
 from collections import OrderedDict
 
@@ -269,7 +270,11 @@ class Data_Source:
             self.data_infer.matched_by(full_path) 
         for k, v in self.data_infer.options.items():
             self.data_factory.set_option(k, v)
+            
+        d = Dot_Printer("Loading the data (this may take a moment)")
+        d.start()
         self.data_obj = self.data_factory.load_data(fp)
+        d.stop()
         self.is_sampled = False
         
         self.__loaded = True

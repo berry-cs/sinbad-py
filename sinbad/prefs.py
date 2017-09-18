@@ -62,11 +62,13 @@ class PrefsGUI:
         self.prefs = load_pref_file()
         self.share_usage = BooleanVar(value = self.prefs.get("share_usage", False))
         self.notify_updates = BooleanVar(value = self.prefs.get("notify_updates", False))
+        self.print_load_progress = BooleanVar(value = self.prefs.get("print_load_progress", False))
         self.show_prefs_window()
 
     def save_prefs(self, *args):
         self.prefs["share_usage"] = self.share_usage.get()
         self.prefs["notify_updates"] = self.notify_updates.get()
+        self.prefs["print_load_progress"] = self.print_load_progress.get()
         write_pref_file(self.prefs)        
         self.root.destroy()
 
@@ -76,20 +78,34 @@ class PrefsGUI:
         if self.first_time:
             root.protocol('WM_DELETE_WINDOW', lambda: False) 
         
+        cur_row = 0
+
         if self.first_time:
             info = Label(root, text="It looks like you've used the Sinbad library a few times now.\nPlease take a moment to adjust your preferences.", justify=LEFT)
         else:
-            info = Label(root, text="Adjust your preferences", justify=LEFT)
-        info.grid(row=0,columnspan=2,sticky=NW)
-        Separator(root,orient=HORIZONTAL).grid(row=1, columnspan=2, sticky=EW)
+            info = Label(root, text="Adjust your preferences", justify=LEFT)    
+        info.grid(row=cur_row,columnspan=2,sticky=NW)
+        
+        cur_row = cur_row + 1
+        Separator(root,orient=HORIZONTAL).grid(row=cur_row, columnspan=2, sticky=EW)
+
+        cur_row = cur_row + 1
         c1 = Checkbutton(root, text="Share usage & diagnostics information", variable=self.share_usage)
-        c1.grid(row=2, column=0, sticky=W)
+        c1.grid(row=cur_row, column=0, sticky=W)
         m = Button(root, text="More info...", command=launch_usage_collection_info)
-        m.grid(row=2, column=1)
+        m.grid(row=cur_row, column=1)
+
+        cur_row = cur_row + 1
         c2 = Checkbutton(root, text="Check and notify for updates", variable=self.notify_updates)
-        c2.grid(row=3, columnspan=2, sticky=W)
+        c2.grid(row=cur_row, columnspan=2, sticky=W)
+            
+        cur_row = cur_row + 1
+        c2 = Checkbutton(root, text="Print data set load progress", variable=self.print_load_progress)
+        c2.grid(row=cur_row, columnspan=2, sticky=W)        
+            
+        cur_row = cur_row + 1
         btn = Button(root, text="Save", default=ACTIVE, command=self.save_prefs)
-        btn.grid(row=4, columnspan=2)
+        btn.grid(row=cur_row, columnspan=2)
         root.attributes('-topmost', True)
         util.tk_to_front(root)
         root.lift()
@@ -97,6 +113,8 @@ class PrefsGUI:
         root.bind("<Return>", self.save_prefs)
         root.mainloop()
         self.root = None
+        
+        apply_preferences()
 
     
 def pref_file_name():
@@ -116,4 +134,14 @@ def default_prefs():
                         ( "run_count" , 0),
                         ( "first_use_ts", ts),
                         ( "last_use_ts", ts),
+                        ( "print_load_progress", True),
                         ( "server_base" , "http://cs.berry.edu/sinbad/")])
+    
+
+
+from sinbad.dot_printer import Dot_Printer
+
+def apply_preferences():
+    '''Immediately applies the current preferences settings'''
+    Dot_Printer.enabled = get_pref("print_load_progress")
+

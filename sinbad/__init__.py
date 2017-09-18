@@ -6,7 +6,6 @@ from sinbad.version import __version__
 from sinbad import prefs
 from sinbad import comm
 
-
 prefs.increment_run_count()
 
 if prefs.get_pref("run_count") == 1:
@@ -19,4 +18,4 @@ elif prefs.get_pref("run_count") == 10:
     prefs.preferences(first_time = True)
 
 
-
+prefs.apply_preferences()
