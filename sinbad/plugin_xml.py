@@ -20,5 +20,8 @@ class XML_Infer(Base_Infer):
 class XML_Data_Factory(Base_Data_Factory):
     
     def load_data(self, fp):
-        return normalize_keys(collapse_dicts( xmltodict.parse(fp.read()))) # produces OrderedDict
+        try:
+            return normalize_keys(collapse_dicts( xmltodict.parse(fp.read()))) # produces OrderedDict
+        except xmltodict.expat.ExpatError:
+            return None
     # could provide  dict_constructor=dict  to  parse(), but  csv reader produces OrderedDict and is not customizable that way 

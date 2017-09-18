@@ -58,11 +58,7 @@ class Cacher:
         
         if not (is_caching() and self.__is_cacheable(path, subtag)): 
             return True
-        
-        cache_index_name = self.__get_cache_index_file(path)
-        if not cache_index_name: 
-            return True
-        
+                
         entry = self.cache_entry_for(path, subtag)
         if not entry or is_expired(entry, self.cache_expiration): 
             return True
@@ -312,6 +308,8 @@ class Cacher:
 
             
     def __read_cache_entry_list(self, cache_index_name):
+        if not cache_index_name: return []
+        
         try:
             with open(cache_index_name, 'r') as fp:
                 return json.load(fp)

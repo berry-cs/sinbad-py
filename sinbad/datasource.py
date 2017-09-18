@@ -28,6 +28,8 @@ from sinbad import plugin_xml
 
 from sinbad.sinbad_error import *
 from sinbad.dot_printer import Dot_Printer
+from sinbad.prefs import get_pref
+from sinbad.comm import register_load
 
 from collections import OrderedDict
 
@@ -213,72 +215,83 @@ class Data_Source:
 
     # load() variants --------------------------------------------------
 
-    def load(self, force_reload = False):
+    def load(self, force_reload = False, usage_info = None):
         if not self.__connected: raise SinbadError("not __connected {}".format(self.path))
         if not self.__ready_to_load(): raise SinbadError("not ready to load; missing params: {}".format(self.__missing_params()))
         
         subtag = "main"
     
         full_path = self.get_full_path_url()
+        stale_data = self.cacher.is_stale(full_path, subtag)
     
-        if self.__loaded and \
-                not self.cacher.is_stale(full_path, subtag) and \
-                not force_reload and \
-                not self.is_sampled:
+        if self.__loaded and not (stale_data or force_reload or self.is_sampled):
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
             return self
         
-        resolved_path = self.cacher.resolve_path(full_path, subtag)
-        fp, new_path, enc = U.create_input(resolved_path)
+        # only share usage if permitted in preferences and if loading something that's not already been previously loaded and cached
+        share_usage = get_pref("share_usage") \
+                        and (not self.cacher.cache_entry_for(full_path, subtag)
+                             or (usage_info and 'sample_amt' in usage_info))
+        if share_usage: usage_info = self.prep_load_usage_info(usage_info)
         
-        #print("Full path: {} {}".format(full_path, U.smells_like_zip(full_path)))
-        if (U.smells_like_zip(full_path) or U.smells_like_zip(new_path)) \
-                    and not U.smells_like_url(resolved_path):
-            try:
-                zf = ZipFile(resolved_path)
-                members = zf.namelist()
-                
-                if 'file-entry' not in self.option_settings and len(members) is 1:
-                    #print("Selecting file-entry from zip: {}".format(members[0]))
-                    self.option_settings['file-entry'] = members[0]
-                
-                if 'file-entry' in self.option_settings and \
-                        self.option_settings['file-entry'] in members:
+        try:
+            resolved_path = self.cacher.resolve_path(full_path, subtag)
+            fp, new_path, enc = U.create_input(resolved_path)
+            
+            #print("Full path: {} {}".format(full_path, U.smells_like_zip(full_path)))
+            if (U.smells_like_zip(full_path) or U.smells_like_zip(new_path)) \
+                        and not U.smells_like_url(resolved_path):
+                try:
+                    zf = ZipFile(resolved_path)
+                    members = zf.namelist()
                     
-                    fe_value = self.option_settings['file-entry']
-                    fe_subtag = "file-entry:{}".format(fe_value)
+                    if 'file-entry' not in self.option_settings and len(members) is 1:
+                        #print("Selecting file-entry from zip: {}".format(members[0]))
+                        self.option_settings['file-entry'] = members[0]
                     
-                    entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
-                    if entry_cached_path:
-                        fp, newpath, enc = U.create_input(entry_cached_path)                        
-                    else: # not in the cache
-                        fp = zf.open(fe_value)
-                        if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
-                            print("something went wrong caching zip file-entry")
+                    if 'file-entry' in self.option_settings and \
+                            self.option_settings['file-entry'] in members:
+                        
+                        fe_value = self.option_settings['file-entry']
+                        fe_subtag = "file-entry:{}".format(fe_value)
+                        
+                        entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
+                        if entry_cached_path:
+                            fp, newpath, enc = U.create_input(entry_cached_path)                        
+                        else: # not in the cache
                             fp = zf.open(fe_value)
-                        else:
-                            entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
-                            fp, newpath, enc = U.create_input(entry_cached_path)
-
-                else:
-                    raise SinbadError("Specify a file-entry from the ZIP file: {}".format(members))
+                            if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
+                                print("something went wrong caching zip file-entry")
+                                fp = zf.open(fe_value)
+                            else:
+                                entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
+                                fp, newpath, enc = U.create_input(entry_cached_path)
+    
+                    else:
+                        raise SinbadError("Specify a file-entry from the ZIP file: {}".format(members))
+                
+                except BadZipfile:
+                    raise SinbadError("ZIP Failed: " + full_path)
             
-            except BadZipfile:
-                raise SinbadError("ZIP Failed: " + full_path)
-        
-        if not self.data_infer.matched_by(self.path):  # because options is only valid after matchedBy has been invoked
-            self.data_infer.matched_by(full_path) 
-        for k, v in self.data_infer.options.items():
-            self.data_factory.set_option(k, v)
+            if not self.data_infer.matched_by(self.path):  # because options is only valid after matchedBy has been invoked
+                self.data_infer.matched_by(full_path) 
+            for k, v in self.data_infer.options.items():
+                self.data_factory.set_option(k, v)
+                
+            d = Dot_Printer("Loading the data (this may take a moment)")
+            d.start()
+            self.data_obj = self.data_factory.load_data(fp)
+            d.stop()
+            self.is_sampled = False
             
-        d = Dot_Printer("Loading the data (this may take a moment)")
-        d.start()
-        self.data_obj = self.data_factory.load_data(fp)
-        d.stop()
-        self.is_sampled = False
-        
-        self.__loaded = True
-        self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
+            self.__loaded = True
+            self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
+        finally:
+            if share_usage:
+                if self.__loaded and self.data_obj: usage_info['status'] = 'success'
+                else: usage_info['status'] = 'failure'
+                register_load(usage_info)
+            
         return self
     
 
@@ -314,7 +327,8 @@ class Data_Source:
             
         sample_path = self.cacher.resolve_path(full_path, subtag)
         if not sample_path or force_reload:
-            self.load(force_reload = force_reload)
+            self.load(force_reload = force_reload, usage_info = { 'sample_amt' : max_elts, 
+                                                                  'sample_seed' : random_seed });
             if self.__loaded:
                 sampled = self.sample_data(self.data_obj, max_elts, random_seed=random_seed)
                 fp = io.BytesIO(json.dumps(sampled).encode()) 
@@ -570,7 +584,7 @@ class Data_Source:
     
     def set_cache_timeout(self, value):
         '''Set the cache delay to the given value in seconds '''
-        self.cacher = self.cacher.updateTimeout(value * 1000)
+        self.cacher = self.cacher.update_timeout(value * 1000)
         return self
     
     def set_cache_directory(self, path):
@@ -640,6 +654,20 @@ class Data_Source:
         spec["params"] = param_list
         
         return spec
+
+
+    # usage reporting----------------------------------------------------
+    def prep_load_usage_info(self, usage_info):
+        '''Prepares a dictionary of usage information to be sent to the server'''
+        if not usage_info: usage_info = {}
+        
+        usage_info['full_url'] = self.get_full_path_url()
+        usage_info['format_type'] = self.format_type
+        usage_info['file_entry'] = self.option_settings.get('file-entry')
+        usage_info['data_options'] = json.dumps( { k : self.data_factory.get_option(k) 
+                                                  for k in self.data_factory.get_options() })
+        
+        return usage_info
 
 
 
