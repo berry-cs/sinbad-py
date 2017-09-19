@@ -127,13 +127,15 @@ class Cacher:
         Returns the path to the cached data file.'''
         try:
             d = None
-            if not fp:
-                if U.smells_like_url(path):
-                    d = Dot_Printer("Downloading {} (this may take a moment)".format(path))
-                    d.start()
-                fp, _, _ = U.create_input(path)
-            data = fp.read() 
-            if d: d.stop()
+            try:
+                if not fp:
+                    if U.smells_like_url(path):
+                        d = Dot_Printer("Downloading {} (this may take a moment)".format(path))
+                        d.start()
+                    fp, _, _ = U.create_input(path)
+                data = fp.read()
+            finally:
+                if d: d.stop()
         except OSError as err:
             print("OSError: {}".format(err.reason))
             raise FileNotFoundError("Failed to load: " + path + "\nCHECK NETWORK CONNECTION, if applicable") 
