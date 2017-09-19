@@ -7,7 +7,10 @@ import urllib.request
 from os import system
 from platform import system as platform
 
-the_ssl_context = ssl.SSLContext()
+try:
+    the_ssl_context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
+except AttributeError:
+    the_ssl_context = ssl.SSLContext(protocol=ssl.PROTOCOL_SSLv23)
 
 
 def hash_string(str):
