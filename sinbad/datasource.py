@@ -29,7 +29,7 @@ from sinbad import plugin_xml
 from sinbad.sinbad_error import *
 from sinbad.dot_printer import Dot_Printer
 from sinbad.prefs import get_pref
-from sinbad.comm import register_load
+from sinbad.comm import register_load, register_sample
 
 from collections import OrderedDict
 
@@ -215,7 +215,7 @@ class Data_Source:
 
     # load() variants --------------------------------------------------
 
-    def load(self, force_reload = False, usage_info = None):
+    def load(self, force_reload = False):
         if not self.__connected: raise SinbadError("not __connected {}".format(self.path))
         if not self.__ready_to_load(): raise SinbadError("not ready to load; missing params: {}".format(self.__missing_params()))
         
@@ -230,13 +230,12 @@ class Data_Source:
         
         # only share usage if permitted in preferences and if loading something that's not already been previously loaded and cached
         share_usage = get_pref("share_usage") \
-                        and (not self.cacher.cache_entry_for(full_path, subtag)
-                             or (usage_info and 'sample_amt' in usage_info))
-        if share_usage: usage_info = self.prep_load_usage_info(usage_info)
+                        and not self.cacher.cache_entry_for(full_path, subtag)
+        if share_usage: usage_info = self.prep_usage_info()
         
         try:
             resolved_path = self.cacher.resolve_path(full_path, subtag)
-            fp, new_path, enc = U.create_input(resolved_path)
+            fp, new_path, _ = U.create_input(resolved_path)
             
             #print("Full path: {} {}".format(full_path, U.smells_like_zip(full_path)))
             if (U.smells_like_zip(full_path) or U.smells_like_zip(new_path)) \
@@ -257,7 +256,7 @@ class Data_Source:
                         
                         entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
                         if entry_cached_path:
-                            fp, newpath, enc = U.create_input(entry_cached_path)                        
+                            fp, _, _ = U.create_input(entry_cached_path)                        
                         else: # not in the cache
                             fp = zf.open(fe_value)
                             if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
@@ -265,7 +264,7 @@ class Data_Source:
                                 fp = zf.open(fe_value)
                             else:
                                 entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
-                                fp, newpath, enc = U.create_input(entry_cached_path)
+                                fp, _, _ = U.create_input(entry_cached_path)
     
                     else:
                         raise SinbadError("Specify a file-entry from the ZIP file: {}".format(members))
@@ -327,14 +326,18 @@ class Data_Source:
             
         sample_path = self.cacher.resolve_path(full_path, subtag)
         if not sample_path or force_reload:
-            self.load(force_reload = force_reload, usage_info = { 'sample_amt' : max_elts, 
-                                                                  'sample_seed' : random_seed });
+            self.load(force_reload = force_reload);
             if self.__loaded:
                 sampled = self.sample_data(self.data_obj, max_elts, random_seed=random_seed)
                 fp = io.BytesIO(json.dumps(sampled).encode()) 
                 self.cacher.add_to_cache(full_path, subtag, fp)
                 self.data_obj = sampled
                 self.is_sampled = True
+                if get_pref("share_usage"):
+                    usage_info = self.prep_usage_info(False)
+                    usage_info['sample_amt'] = max_elts
+                    usage_info['sample_seed'] = random_seed
+                    register_sample(usage_info)
         else: # sample seems to be cached
             fp, _, _ = U.create_input(sample_path) 
             self.data_obj = json.loads(fp.read().decode())
@@ -657,15 +660,17 @@ class Data_Source:
 
 
     # usage reporting----------------------------------------------------
-    def prep_load_usage_info(self, usage_info):
+    def prep_usage_info(self, include_options = True):
         '''Prepares a dictionary of usage information to be sent to the server'''
-        if not usage_info: usage_info = {}
+        usage_info = {}
         
         usage_info['full_url'] = self.get_full_path_url()
         usage_info['format_type'] = self.format_type
         usage_info['file_entry'] = self.option_settings.get('file-entry')
-        usage_info['data_options'] = json.dumps( { k : self.data_factory.get_option(k) 
-                                                  for k in self.data_factory.get_options() })
+        
+        if include_options:
+            usage_info['data_options'] = json.dumps( { k : self.data_factory.get_option(k) 
+                                                      for k in self.data_factory.get_options() })
         
         return usage_info
 
