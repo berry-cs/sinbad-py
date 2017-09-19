@@ -29,7 +29,7 @@ from sinbad import plugin_xml
 from sinbad.sinbad_error import *
 from sinbad.dot_printer import Dot_Printer
 from sinbad.prefs import get_pref
-from sinbad.comm import register_load, register_sample
+from sinbad.comm import register_load, register_sample, register_fetch
 
 from collections import OrderedDict
 
@@ -384,6 +384,15 @@ class Data_Source:
         method each time before fetch().
         '''
         data = self.fetch_all()
+        
+        if get_pref("share_usage"):
+            usage_info = self.prep_usage_info(False)
+            usage_info['field_paths'] = ",".join(field_paths)
+            usage_info['base_path']   = base_path
+            usage_info['select']      = str(select)
+            usage_info['got_data']    = data and len(data) > 0
+            register_fetch(usage_info)
+        
         if len(field_paths) is 0:
             collected = data
         else:

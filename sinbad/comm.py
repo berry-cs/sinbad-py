@@ -10,6 +10,9 @@ from sinbad import prefs
 
 HOLD_TIME = 1    # number of seconds that we will wait to get a response back from the server
 
+os_info = platform.uname().system + "/" + platform.uname().release
+lang_info = 'python {}.{}.{} {}'.format(*sys.version_info[0:4])
+
 
 def handle_response(resp):
     '''Handle a response (string, probably JSON format) from the server'''
@@ -19,6 +22,7 @@ def handle_response(resp):
         obj = json.loads(resp)
         #print(obj)
     except JSONDecodeError:
+        #print("Nope: " + str(resp))
         pass  # it's ok... probably just an "OK" string
    
 
@@ -35,10 +39,24 @@ def make_request(post_fields):
     if result: handle_response(result.read().decode())
    
    
-def register_sample(usage_info):
-    os_info = platform.uname().system + "/" + platform.uname().release
-    lang_info = 'python {}.{}.{} {}'.format(*sys.version_info[0:4])
+def register_fetch(usage_info):
+    make_request({'type' : 'usage',
+                   'version'    : sinbad.__version__,
+                   'token'      : hashlib.md5(sinbad.__version__.encode()).hexdigest(),
+                   'os'         : os_info,
+                   'lang'       : lang_info,
+                   'usage_type' : 'fetch',
+                   'full_url'   : usage_info.get('full_url'),
+                   'format'     : usage_info.get('format_type'),
+                   'file_entry' : usage_info.get('file_entry'),
+                   'field_paths' : usage_info.get('field_paths'),     
+                   'base_path' : usage_info.get('base_path'),            
+                   'select' : usage_info.get('select'),
+                   'got_data' : bool(usage_info.get('got_data'))
+                   })
+
    
+def register_sample(usage_info):   
     make_request({'type' : 'usage',
                    'version'    : sinbad.__version__,
                    'token'      : hashlib.md5(sinbad.__version__.encode()).hexdigest(),
@@ -53,10 +71,7 @@ def register_sample(usage_info):
                    })
    
    
-def register_load(usage_info):  # full_url, format_type, status, sample_amt, sample_seed, data_options):
-    os_info = platform.uname().system + "/" + platform.uname().release
-    lang_info = 'python {}.{}.{} {}'.format(*sys.version_info[0:4])
-   
+def register_load(usage_info):  # full_url, format_type, status, sample_amt, sample_seed, data_options):   
     make_request({'type' : 'usage',
                    'version'    : sinbad.__version__,
                    'token'      : hashlib.md5(sinbad.__version__.encode()).hexdigest(),
@@ -72,9 +87,6 @@ def register_load(usage_info):  # full_url, format_type, status, sample_amt, sam
     
         
 def register_install():
-    os_info = platform.uname().system + "/" + platform.uname().release
-    lang_info = 'python {}.{}.{} {}'.format(*sys.version_info[0:4])
-
     make_request({'type' : 'install',
                    'version' : sinbad.__version__,
                    'token' : hashlib.md5(sinbad.__version__.encode()).hexdigest(),
