@@ -1,10 +1,13 @@
 
 import hashlib
+import ssl
 import time
 import urllib.request
 
 from os import system
 from platform import system as platform
+
+the_ssl_context = ssl.SSLContext()
 
 
 def hash_string(str):
@@ -65,7 +68,7 @@ def create_input(path):
         req = urllib.request.Request(path, 
                                      data=None,
                                      headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'})
-        file = urllib.request.urlopen(req)
+        file = urllib.request.urlopen(req, context=the_ssl_context)
         charset = file.info().get_content_charset()
     elif path.startswith("wss:"):
         return (path, path, charset)
