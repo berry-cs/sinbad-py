@@ -22,7 +22,7 @@ class CSV_Infer(Base_Infer):
         
         is_tsv = False
         if path.endswith("tsv"): is_tsv = True
-        for ptrn in [".tsv", "=csv"]:
+        for ptrn in [".tsv", "=tsv", "/tsv"]:
             if ptrn in path: is_tsv = True
         if is_tsv:
             self.options['delimiter'] = '\t'
