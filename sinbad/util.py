@@ -7,7 +7,6 @@ import urllib.request
 
 from os import system, path
 from platform import system as platform
-from wheel import paths
 
 try:
     the_ssl_context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
