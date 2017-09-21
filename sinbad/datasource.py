@@ -224,7 +224,7 @@ class Data_Source:
     
         full_path = self.get_full_path_url()
         stale_data = self.cacher.is_stale(full_path, subtag)
-    
+        
         if self.__loaded and not (stale_data or force_reload or self.is_sampled):
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
             return self
@@ -413,7 +413,7 @@ class Data_Source:
                 
             if base_path:      
                 base_path = self.__patch_jsonpath_path(base_path, data)
-                data = parse("$[*]." + base_path).find(data)
+                data = parse(base_path).find(data)
             
             if not isinstance(data, list):
                 data = [data]   # so the for loop below works
@@ -712,15 +712,16 @@ class Data_Source:
         fixed_pieces = []
         cur_data = data
         
-        #print("data: {}".format(data) [:2000])
+        #print("data: {}".format(data) [:200])
         
         if isinstance(data, list):
             fixed_pieces.append("$[*]")
-            cur_data = parse("$[*]").find(cur_data)[0].value[0]
+            cur_data = parse("$[*]").find(cur_data)[0].value
             
         for piece in splits:
             #print("piece: {}  fixed_pieces: {}  data: {}".format(piece, fixed_pieces, cur_data) [:300])
             cur_data = parse(piece).find(cur_data)[0].value
+            #print("done find")
                             
             if isinstance(cur_data, list) and len(cur_data) > 1 and not piece.endswith("]"):
                 fixed_pieces.append(piece + "[*]")
@@ -728,6 +729,7 @@ class Data_Source:
             else:
                 fixed_pieces.append(piece)
         
+        #print("done: {}".format(fixed_pieces))
         return ".".join(fixed_pieces)       
 
 

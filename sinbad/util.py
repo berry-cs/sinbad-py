@@ -1,4 +1,5 @@
 
+import gzip
 import hashlib
 import ssl
 import time
@@ -47,6 +48,11 @@ def smells_like_zip(path):
     return path.find(".zip") >= 0
 
 
+def smells_like_gzip(path):
+    return path.find(".gz") >= 0
+
+
+
 def create_input(path):
     '''Returns a triple, ( fp, path, enc ), containing a file-type object
     for the given path, a potentially redirected path name, and an encoding.
@@ -78,6 +84,9 @@ def create_input(path):
         return (path, path, charset)
     else:
         file = open(path, 'rb')  # binary to be consistent with urlopen 
+
+    if smells_like_gzip(path):
+        file = gzip.GzipFile('', 'rb', 9, file)
 
     return (file, path, charset)
     

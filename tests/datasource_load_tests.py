@@ -4,7 +4,7 @@ Created on Aug 24, 2017
 @author: nhamid
 '''
 import unittest
-from sinbad import DataSource
+from sinbad import *
 
 from pprint import pprint
 
@@ -114,7 +114,7 @@ class Test(unittest.TestCase):
         
 
 
-    def testZip(self):
+    def test_zip(self):
         ds = DataSource.connect("http://www.fueleconomy.gov/feg/epadata/vehicles.csv.zip")
         ds.set_option('file-entry', "vehicles.csv")
         print("A")
@@ -149,6 +149,32 @@ class Test(unittest.TestCase):
         pprint(rdata)
         pprint(rdata3)
         self.assertNotEqual(rdata, rdata3)
+
+
+    def test_gzip(self):
+        ds = Data_Source.connect("https://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/StormEvents_details-ftp_v1.0_d1950_c20170120.csv.gz")
+        ds.load()
+        ds.print_description()
+        
+        ds = DataSource.connect("https://s3.amazonaws.com/weruns/forfun/Kickstarter/Kickstarter_2015-10-22T09_57_48_703Z.json.gz")
+        ds.load_sample(100)
+        ds.print_description()
+
+        print(ds.data_length("data/projects"))
+        
+        print("Start fetch")
+        x = ds.fetch_random("name", "blurb", "backers_count",  "category/name", "country", "creator/name", "goal", "pledged", "deadline", base_path="data/projects")
+        print("Done fetch")
+
+        # well, this is zip, but anyway...
+        ds = Data_Source.connect("https://s3.amazonaws.com/weruns/kickstarter_old/Kickstarter_2014-04-22.json.zip")
+        ds.set_option("file-entry", "Kickstarter_Kickstarter.json")
+        ds.load_sample(1000)
+        ds.print_description()
+
+        pprint(x)
+        
+        print(ds.data_length("projects"))
 
 
     def ZZZ_test_TSV(self):
