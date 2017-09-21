@@ -4,8 +4,9 @@ import ssl
 import time
 import urllib.request
 
-from os import system
+from os import system, path
 from platform import system as platform
+from wheel import paths
 
 try:
     the_ssl_context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
@@ -64,7 +65,7 @@ def create_input(path):
     headers, it is included, otherwise the third element 
     of the triple is None.    
     '''
-    if not path: return None
+    if not path: return None, None, None
     
     charset = None
     if smells_like_url(path):
@@ -134,6 +135,23 @@ def collapse_dicts(data):
             data = first_value
         
         return data
+
+
+
+def extract_base_path(paths, seps = ['.', '/']):
+    if len(paths) <= 1: return None, paths
+    
+    p = path.commonprefix(paths)
+    i = 1
+    while i < len(p) and p[-i] not in seps:  # so we split on the separator
+        i = i + 1
+    if (len(p) == 0
+            or i >= len(p) 
+            or p[:-i] == '$[*]'): 
+        return None, paths
+
+    p = p[:-i]
+    return p, [ pth[len(p) + 1:] for pth in paths ]
 
 
 

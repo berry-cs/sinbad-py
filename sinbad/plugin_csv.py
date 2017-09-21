@@ -95,6 +95,10 @@ class CSV_Data_Factory(Base_Data_Factory):
         if name == "header":   # value could be a list or a string of comma-separated column names
             if isinstance(value, str):
                 values = value.split(",")
+            elif isinstance(value, list):
+                values = value
+            else:
+                raise ValueError("header value must be provided as a comma-separated string or a list of strings")
             self.field_names = [v.strip().strip("\"'").strip() for v in values]
         elif name == "delimiter":
             self.delimiter = value

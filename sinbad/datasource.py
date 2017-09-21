@@ -11,6 +11,7 @@ import random
 import json
 import io
 import os
+import sys
 
 import tkinter as tk
 from tkinter import filedialog
@@ -233,6 +234,7 @@ class Data_Source:
                         and not self.cacher.cache_entry_for(full_path, subtag)
         if share_usage: usage_info = self.prep_usage_info()
         
+        fp = None
         try:
             resolved_path = self.cacher.resolve_path(full_path, subtag)
             fp, new_path, _ = U.create_input(resolved_path)
@@ -256,13 +258,16 @@ class Data_Source:
                         
                         entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
                         if entry_cached_path:
+                            fp.close()
                             fp, _, _ = U.create_input(entry_cached_path)                        
                         else: # not in the cache
+                            fp.close()
                             fp = zf.open(fe_value)
                             if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
-                                print("something went wrong caching zip file-entry")
+                                print("something went wrong caching zip file-entry", file=sys.stderr)
                                 fp = zf.open(fe_value)
                             else:
+                                fp.close()
                                 entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
                                 fp, _, _ = U.create_input(entry_cached_path)
     
@@ -286,6 +291,7 @@ class Data_Source:
             self.__loaded = True
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
         finally:
+            if fp and hasattr(fp, 'close'): fp.close()
             if share_usage:
                 if self.__loaded and self.data_obj: usage_info['status'] = 'success'
                 else: usage_info['status'] = 'failure'
@@ -397,12 +403,18 @@ class Data_Source:
             collected = data
         else:
             collected = []
-    
+            
+            if base_path is None:  # see if it can be extracted as a common prefix of the field_paths
+                base_path, field_paths = U.extract_base_path(field_paths)
+            # note: if base_path is '', then we specifically assume it's not wanted to be inferred
+            if base_path is '': base_path = None
+                
             if base_path:      
                 base_path = self.__patch_jsonpath_path(base_path, data)
                 data = parse("$[*]." + base_path).find(data)
-            elif not isinstance(data, list):
-                data = [data]
+            
+            if not isinstance(data, list):
+                data = [data]   # so the for loop below works
             
             parsed_paths = None
             field_names = None

@@ -342,9 +342,14 @@ def make_entry(tag, subtag, cachedata, timestamp):
 
 def data_valid(entry):
     '''Check to see if the entry's cachedata refers to an actual readable file.'''
-    return entry["cachedata"] and \
-            os.path.isfile(entry["cachedata"]) and \
-            U.create_input(entry["cachedata"])[0] is not None
+    if entry["cachedata"] and \
+            os.path.isfile(entry["cachedata"]):
+        fp = U.create_input(entry["cachedata"])[0]
+        if fp:
+            fp.close()
+            return True
+
+    return False
 
 
 def is_expired(entry, expiration):

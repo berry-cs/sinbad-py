@@ -65,5 +65,17 @@ class UtilTest(unittest.TestCase):
                           "doesn't go inside lists" ) 
 
 
+    def test_extract_base_path(self):
+        self.assertEqual( extract_base_path(['/usr/lib', '/usr/local/lib'], sep = '/'),
+                          ('/usr', [ 'lib', 'local/lib' ]) )
+        self.assertEqual( extract_base_path(['usr.lib', 'usr.local.lib']),
+                          ('usr', [ 'lib', 'local.lib' ]) )
+        self.assertEqual( extract_base_path(['busr.lib', 'ausr.local.lib']),
+                          (None, ['busr.lib', 'ausr.local.lib']) )
+        self.assertEqual( extract_base_path(['busr/lib', 'ausr/local/lib'], sep = '/'),
+                          (None, ['busr/lib', 'ausr/local/lib']) )
+
+
+
 if __name__ == "__main__":
     unittest.main()
