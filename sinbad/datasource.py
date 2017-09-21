@@ -700,11 +700,11 @@ class Data_Source:
 
 
     # other stuff -------------------------------------------------------
-    def __patch_jsonpath_path(self, pth, data):
+    def __patch_jsonpath_path(self, orig_pth, data):
         '''
         Replace '/'s with '.'s  and add '[*]'s as required by jsonpath_rw
         '''
-        pth = pth.replace("/", ".")
+        pth = orig_pth.replace("/", ".")
         splits = pth.split(".")
         if not splits:
             return pth
@@ -720,8 +720,10 @@ class Data_Source:
             
         for piece in splits:
             #print("piece: {}  fixed_pieces: {}  data: {}".format(piece, fixed_pieces, cur_data) [:300])
-            cur_data = parse(piece).find(cur_data)[0].value
-            #print("done find")
+            found = parse(piece).find(cur_data)
+            if not found or len(found) < 1:
+                raise SinbadError("Could not process field path: {}".format(orig_pth))
+            cur_data = found[0].value
                             
             if isinstance(cur_data, list) and len(cur_data) > 1 and not piece.endswith("]"):
                 fixed_pieces.append(piece + "[*]")
