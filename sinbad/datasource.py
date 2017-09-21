@@ -235,7 +235,11 @@ class Data_Source:
         if share_usage: usage_info = self.prep_usage_info()
         
         fp = None
+        d = None
         try:
+            d = Dot_Printer("Loading the data (this may take a moment)")
+            d.start()
+            
             resolved_path = self.cacher.resolve_path(full_path, subtag)
             fp, new_path, _ = U.create_input(resolved_path)
             
@@ -282,15 +286,13 @@ class Data_Source:
             for k, v in self.data_infer.options.items():
                 self.data_factory.set_option(k, v)
                 
-            d = Dot_Printer("Loading the data (this may take a moment)")
-            d.start()
             self.data_obj = self.data_factory.load_data(fp)
-            d.stop()
             self.is_sampled = False
             
             self.__loaded = True
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
         finally:
+            if d: d.stop()
             if fp and hasattr(fp, 'close'): fp.close()
             if share_usage:
                 if self.__loaded and self.data_obj: usage_info['status'] = 'success'
@@ -707,21 +709,26 @@ class Data_Source:
         if not splits:
             return pth
         
+        fixed_pieces = []
+        cur_data = data
+        
+        #print("data: {}".format(data) [:2000])
+        
         if isinstance(data, list):
-            fixed_path = "$[*]"
-        else:
-            fixed_path = ""
+            fixed_pieces.append("$[*]")
+            cur_data = parse("$[*]").find(cur_data)[0].value[0]
+            
         for piece in splits:
-            if fixed_path: fixed_path = fixed_path + "."
-            fixed_path = fixed_path + piece
-            #print("checking " + fixed_path + " " + str(data))
-            selected = parse(fixed_path).find(data)
-            if len(selected) == 1 and type(selected[0].value) == list and \
-                    len(selected[0].value) > 1 and not fixed_path.endswith("]"):
-                #print("adding *: {} b/c {}".format(fixed_path, str(selected[0].value)))
-                fixed_path = fixed_path + "[*]"
-                
-        return fixed_path       
+            #print("piece: {}  fixed_pieces: {}  data: {}".format(piece, fixed_pieces, cur_data) [:300])
+            cur_data = parse(piece).find(cur_data)[0].value
+                            
+            if isinstance(cur_data, list) and len(cur_data) > 1 and not piece.endswith("]"):
+                fixed_pieces.append(piece + "[*]")
+                cur_data = cur_data[0]
+            else:
+                fixed_pieces.append(piece)
+        
+        return ".".join(fixed_pieces)       
 
 
     def __post_process(self, result, *field_paths):
