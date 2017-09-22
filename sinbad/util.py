@@ -91,7 +91,7 @@ def raw_create_input(path):
             path=local_name
             #print("CONTENT: {}".format(path))
     elif path.startswith("wss:"):
-        return (path, None, charset)
+        return (None, None, None)
     else:
         file = open(path, 'rb')  # binary to be consistent with urlopen 
 

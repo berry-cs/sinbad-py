@@ -227,7 +227,8 @@ class Cacher:
         (This is sort of a simple, manual version of resolve_path.)
         
         Returns True if the whole procedure succeeded.'''
-        if not is_caching(): return False
+        global NEVER_CACHE
+        if not is_caching() or self.cache_expiration == NEVER_CACHE: return False
         
         cacheIndexName = self.__get_cache_index_file(path)
         if cacheIndexName is None: return False

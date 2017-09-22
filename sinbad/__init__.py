@@ -2,6 +2,7 @@
 
 from sinbad.datasource import DataSource, Data_Source
 from sinbad.version import __version__
+from sinbad.cacher import NEVER_CACHE, NEVER_RELOAD
 
 from sinbad import prefs
 from sinbad import comm

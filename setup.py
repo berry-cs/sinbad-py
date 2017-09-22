@@ -12,7 +12,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='sinbad',
-    version='0.5b5',
+    version='0.5b6',
     description='A library for uniform, easy access to online data sources in standard formats',
     long_description=long_description,
     url='http://cs.berry.edu/sinbad/',

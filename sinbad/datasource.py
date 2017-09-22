@@ -234,21 +234,27 @@ class Data_Source:
                         and not self.cacher.cache_entry_for(full_path, subtag)
         if share_usage: usage_info = self.prep_usage_info()
         
-        fp = None
+        zfp, fp = (None, None)
         d = None
         try:
             d = Dot_Printer("Loading the data (this may take a moment)")
             d.start()
             
             resolved_path = self.cacher.resolve_path(full_path, subtag)
-            fp = U.create_input(resolved_path)
-            real_name = self.cacher.lookup_entry_data(full_path, "real-name")
-            enc = self.cacher.lookup_entry_data(full_path, "ajflk")
+            if resolved_path == full_path:   # wasn't cached - loading it directly
+                fp, real_name, enc = U.raw_create_input(resolved_path)
+                if fp:
+                    byts = fp.read()
+                    fp = io.BytesIO(byts)
+            else:
+                fp = U.create_input(resolved_path)
+                real_name = self.cacher.lookup_entry_data(full_path, "real-name")
+                enc = self.cacher.lookup_entry_data(full_path, "enc")
             
-            if U.smells_like_zip(full_path) \
+            if fp and U.smells_like_zip(full_path) \
                     or (real_name and U.smells_like_zip(real_name)):
                 try:
-                    zf = ZipFile(resolved_path)
+                    zf = ZipFile(fp)
                     members = zf.namelist()
                     
                     if 'file-entry' not in self.option_settings and len(members) is 1:
@@ -262,38 +268,38 @@ class Data_Source:
                         
                         entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
                         if entry_cached_path:
-                            fp.close()
-                            fp = U.create_input(entry_cached_path)                        
+                            zfp = U.create_input(entry_cached_path)                        
                         else: # not in the cache
-                            fp.close()
                             enc = None
-                            fp = zf.open(fe_value)
-                            if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
-                                print("something went wrong caching zip file-entry", file=sys.stderr)
-                                fp = zf.open(fe_value)
+                            zfp = zf.open(fe_value)
+                            if not self.cacher.add_to_cache(full_path, fe_subtag, zfp):
+                                #print("something went wrong caching zip file-entry", file=sys.stderr)
+                                zfp = zf.open(fe_value)
                             else:
-                                fp.close()
+                                zfp.close()
                                 entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
-                                fp = U.create_input(entry_cached_path)
+                                zfp = U.create_input(entry_cached_path)
     
                     else:
                         raise SinbadError("Specify a file-entry from the ZIP file: {}".format(members))
                 
                 except BadZipfile:
                     raise SinbadError("ZIP Failed: " + full_path)
+                
             
             if not self.data_infer.matched_by(self.path):  # because options is only valid after matchedBy has been invoked
                 self.data_infer.matched_by(full_path) 
             for k, v in self.data_infer.options.items():
                 self.data_factory.set_option(k, v)
                 
-            self.data_obj = self.data_factory.load_data(fp, enc)
+            self.data_obj = self.data_factory.load_data(zfp if zfp else fp if fp else resolved_path, enc)
             self.is_sampled = False
             
             self.__loaded = True
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
         finally:
             if d: d.stop()
+            if zfp: zfp.close()
             if fp and hasattr(fp, 'close'): fp.close()
             if share_usage:
                 if self.__loaded and self.data_obj: usage_info['status'] = 'success'
@@ -655,10 +661,13 @@ class Data_Source:
     
     
     # export ------------------------------------------------------------
-    def export(self):
+    def export(self, fp = None):
         '''
-        Exports a JSON-like description of this Data_Source (in the format
+        Exports a JSON-like object describing this Data_Source (in the format
         used for specification files).
+        
+        If a file-like object or file path is provided, the specification
+        is saved to the file.
         '''
         spec = OrderedDict()
         if self.path: spec["path"] = self.path
@@ -688,6 +697,13 @@ class Data_Source:
         for k, p in self.params.items():
             param_list.append( p.export(self.param_values.get(k, None)) )
         spec["params"] = param_list
+        
+        if fp:
+            if hasattr(fp, 'write'):  # file-like object?
+                json.dump(spec, fp, indent=2)
+            else:
+                with open(fp, 'w') as fpp:
+                    json.dump(spec, fpp, indent=2)
         
         return spec
 
