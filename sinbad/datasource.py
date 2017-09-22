@@ -560,11 +560,51 @@ class Data_Source:
         return D.describe(self.data_obj)
     
     
-    def print_description(self):
+    def print_description(self, verbose=False):
         print("-----")
-        print("Data Source: {}\n".format(self.get_full_path_url()))
-        print("The following data is available:")        
-        print(self.description())    
+        if self.name and self.name is not self.path:
+            print("Data Source: {}\nURL: {}".format(self.name, self.get_full_path_url()))
+        else:
+            print("Data Source: {}".format(self.get_full_path_url()))
+        if "file-entry" in self.option_settings:
+            print("   (Zip file entry: {})".format(self.option_settings.get("file-entry")))
+        if verbose and self.format_type:
+            print("Format: {}".format(self.format_type))
+
+        if self.info_text or self.info_url: print()
+        if self.info_text: print(self.info_text)  
+        if self.info_url: print("(See {} for more information about this data.)".format(self.info_url))
+            
+        param_keys = [k for k in self.params]
+        if len(param_keys) > 0:
+            param_keys.sort()
+            print("\nThe following (connection) parameters may/must be set on this data source:")
+            
+            for pkey in param_keys:
+                prm = self.params[pkey]
+                p_val = self.param_values.get(pkey)
+                desc = prm.description
+                req =  prm.required
+                val_str = "not set" if not p_val else "currently set to: '{}'".format(p_val)
+                desc_str = " {}".format(desc) if desc else ""
+                req_str = " [*required]" if req else ""
+                print("   - {} ({}){}{}".format(pkey, val_str, desc_str, req_str))
+            
+        opt_keys = self.data_factory.get_options()
+        if verbose and len(opt_keys) > 0:
+            opt_keys.sort()
+            print("\nThe following options are available for this data source format:")
+            
+            for okey in opt_keys:
+                oval = self.data_factory.get_option(okey)
+                val_str = " (currently set to: '{}')".format(oval) if oval else ""
+                print("   - {}{}".format(okey, val_str))
+            
+        if self.has_data():
+            print("\nThe following data is available:")        
+            print(self.description())
+        else:
+            print("\n*** Data not loaded *** ... use .load()\n")    
     
 
 
