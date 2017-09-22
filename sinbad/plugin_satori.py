@@ -26,7 +26,7 @@ class Satori_Data_Factory(Base_Data_Factory):
         self.appkey = None
     
     
-    def load_data(self, fp):
+    def load_data(self, fp, encoding = None):
         '''
         Here, fp is a path string "wss://..." rather than a file-like object 
         '''

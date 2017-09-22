@@ -42,7 +42,7 @@ class CustomDecoder(json.JSONDecoder):
 
 class JSON_Data_Factory(Base_Data_Factory):
     
-    def load_data(self, fp):
+    def load_data(self, fp, encoding = None):
         return normalize_keys(collapse_dicts(json.loads(fp.read().decode(),
                                                         cls=CustomDecoder,
                                                         parse_int = str,

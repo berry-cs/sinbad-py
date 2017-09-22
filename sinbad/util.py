@@ -51,10 +51,13 @@ def smells_like_gzip(path):
     return path.find(".gz") >= 0
 
 
-
 def create_input(path):
-    '''Returns a triple, ( fp, path, enc ), containing a file-type object
-    for the given path, a potentially redirected path name, and an encoding.
+    return raw_create_input(path)[0]
+
+
+def raw_create_input(path):
+    '''Returns a triple, ( fp, real_name, enc ), containing a file-type object
+    for the given path, an alternate name for the resource, and an encoding.
     
     If the path is a normal file, produces a file-object for that file.
     
@@ -62,9 +65,9 @@ def create_input(path):
     returns an input stream to read the response.
     
     In the process of processing the response from the URL,
-    if a modified name for the file is found (e.g. in 
-    a Content-Disposition header), that is produced. 
-    Otherwise the path is produced back as is.
+    if a name for the file is found (e.g. in 
+    a Content-Disposition header), that is produced as real_name. 
+    Otherwise real_name is returned as None.
     
     If an encoding is determined from the URL response
     headers, it is included, otherwise the third element 
@@ -73,21 +76,29 @@ def create_input(path):
     if not path: return None, None, None
     
     charset = None
+    local_name = None
     if smells_like_url(path):
         req = urllib.request.Request(path, 
                                      data=None,
                                      headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'})
         file = urllib.request.urlopen(req, context=the_ssl_context)
         charset = file.info().get_content_charset()
+        if 'Content-Disposition' in file.info():
+            # If the response has Content-Disposition, we take file name from it
+            local_name = file.info()['Content-Disposition'].split('filename=')[1]
+            if local_name[0] == '"' or local_name[0] == "'":
+                local_name = local_name[1:-1]
+            path=local_name
+            #print("CONTENT: {}".format(path))
     elif path.startswith("wss:"):
-        return (path, path, charset)
+        return (path, None, charset)
     else:
         file = open(path, 'rb')  # binary to be consistent with urlopen 
 
     if smells_like_gzip(path):
         file = gzip.GzipFile('', 'rb', 9, file)
 
-    return (file, path, charset)
+    return (file, local_name, charset)
     
 
 
@@ -115,6 +126,13 @@ def normalize_keys(data):
     
     return data
     
+
+def collapse_lists(data):
+    if all(isinstance(el, list) for el in data):
+        return [item for sublist in data for item in sublist]
+    else:
+        return data
+
 
 def collapse_dicts(data):
     '''
@@ -162,6 +180,17 @@ def extract_base_path(paths, seps = ['.', '/']):
     return p, [ pth[len(p) + 1:] for pth in paths ]
 
 
+
+def drop_lines(str_data, n):
+    i = 0
+    for i in range(len(str_data)):
+        if n <= 0: break
+        if str_data[i] == '\n': n = n - 1
+
+    if n > 0: return ''
+    else: return str_data[i:]
+    
+    
 
 def tk_to_front(root):
     root.focus_force()

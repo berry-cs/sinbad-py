@@ -27,7 +27,7 @@ class PluginCSVTest(unittest.TestCase):
         for path in ['data/mock_data.csv',
                      'https://raw.githubusercontent.com/berry-cs/sinbad-py/master/tests/data/mock_data.csv']:
             df = CSV_Data_Factory()
-            with create_input(path)[0] as fp:
+            with create_input(path) as fp:
                 data = df.load_data(fp)
                 self.assertEqual(df.field_names, 
                                  'id,first_name,last_name,email,gender,ip_address'.split(','))

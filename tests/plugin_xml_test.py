@@ -27,7 +27,7 @@ class PluginXMLTest(unittest.TestCase):
         for path in ['data/people.xml',
                      'https://raw.githubusercontent.com/berry-cs/sinbad-py/master/tests/data/people.xml']:
             df = XML_Data_Factory()
-            with create_input(path)[0] as fp:
+            with create_input(path) as fp:
                 data = df.load_data(fp)
                 self.assertTrue(isinstance(data,list))     
                 self.assertEqual([k for k in data[0]],     # check keys

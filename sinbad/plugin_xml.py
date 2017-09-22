@@ -19,7 +19,7 @@ class XML_Infer(Base_Infer):
 
 class XML_Data_Factory(Base_Data_Factory):
     
-    def load_data(self, fp):
+    def load_data(self, fp, encoding = None):
         try:
             return normalize_keys(collapse_dicts( xmltodict.parse(fp.read()))) # produces OrderedDict
         except xmltodict.expat.ExpatError:

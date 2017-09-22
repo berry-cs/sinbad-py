@@ -27,14 +27,15 @@ class UtilTest(unittest.TestCase):
         self.assertFalse(smells_like_url("/Users/foo/bar.txt"))
 
     def test_create_input(self):
-        fp, pth, enc = create_input("http://cs.berry.edu")
-        self.assertEqual(pth, "http://cs.berry.edu")
+        fp, _, enc = raw_create_input("http://cs.berry.edu")
         self.assertEqual(enc, "utf-8")
         fp.close()
         
-        fp, pth, enc = create_input("util_test.py")
-        self.assertEqual(pth, "util_test.py")
+        fp, _, enc = raw_create_input("util_test.py")
         self.assertIsNone(enc)
+        
+        #TODO: test the real_name element returned
+        
         
     def test_normalize(self):
         self.assertEqual( normalize_keys({ "hi" : 234, "6435" : "5243", 
@@ -66,15 +67,32 @@ class UtilTest(unittest.TestCase):
 
 
     def test_extract_base_path(self):
-        self.assertEqual( extract_base_path(['/usr/lib', '/usr/local/lib'], sep = '/'),
+        self.assertEqual( extract_base_path(['/usr/lib', '/usr/local/lib']),
                           ('/usr', [ 'lib', 'local/lib' ]) )
         self.assertEqual( extract_base_path(['usr.lib', 'usr.local.lib']),
                           ('usr', [ 'lib', 'local.lib' ]) )
         self.assertEqual( extract_base_path(['busr.lib', 'ausr.local.lib']),
                           (None, ['busr.lib', 'ausr.local.lib']) )
-        self.assertEqual( extract_base_path(['busr/lib', 'ausr/local/lib'], sep = '/'),
+        self.assertEqual( extract_base_path(['busr/lib', 'ausr/local/lib']),
                           (None, ['busr/lib', 'ausr/local/lib']) )
 
+
+    def test_drop_lines(self):
+        self.assertEqual( drop_lines("\nhello\nthere\nwhat's up,\ndoc?", 1),
+                          "hello\nthere\nwhat's up,\ndoc?" )
+
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 0),
+                          "hello\nthere\nwhat's up,\ndoc?" )
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 1),
+                          "there\nwhat's up,\ndoc?" )
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 2),
+                          "what's up,\ndoc?" )
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 3),
+                          "doc?" )
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 4),
+                          "" )
+        self.assertEqual( drop_lines("hello\nthere\nwhat's up,\ndoc?", 5),
+                          "" )
 
 
 if __name__ == "__main__":

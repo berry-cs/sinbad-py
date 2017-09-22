@@ -1,3 +1,4 @@
-v0.5b3, September 21, 2017 -- Handle gzip files, better json support
+v0.5b5, September 21, 2017 -- Support content-disposition headers, improve handling of zip and csv files
+v0.5b4, September 21, 2017 -- Handle gzip files, better json support
 v0.5b2, September 19, 2017 -- Implement usage reporting
 v0.5b1, September 15, 2017 -- Initial release.

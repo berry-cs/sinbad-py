@@ -88,6 +88,16 @@ class Cacher:
                 return e
             
         return None
+    
+    
+    def lookup_entry_data(self, tag, subtag):        
+        entry = self.cache_entry_for(tag, subtag)
+        if entry:
+            if is_expired(entry, self.cache_expiration):
+                self.clear_cache_data(tag, subtag)
+            else:
+                return entry["cachedata"]
+        return None
 
 
     def add_or_update_entry(self, entry):
@@ -124,15 +134,21 @@ class Cacher:
         object) and stores it in a temporary file in the local cache directory
         (using cache_byte_data). 
         
-        Returns the path to the cached data file.'''
+        Returns a triple of:
+         - the path to the cached data file
+         - an alternate name for the data (e.g. from content-disposition header)
+         - an encoding for the data if detected by raw_create_input.'''
         try:
             d = None
+            real_name, enc = (None, None)
             try:
                 if not fp:
                     if U.smells_like_url(path):
                         d = Dot_Printer("Downloading {} (this may take a moment)".format(path))
                         d.start()
-                    fp, _, _ = U.create_input(path)
+                    fp, real_name, enc = U.raw_create_input(path)
+                #if real_name and real_name is not path: print("Got: " + real_name)
+                #if enc: print("Encoding: " + enc)
                 data = fp.read()
             finally:
                 if d: d.stop()
@@ -141,7 +157,7 @@ class Cacher:
             raise FileNotFoundError("Failed to load: " + path + "\nCHECK NETWORK CONNECTION, if applicable") 
         
         cached_file = self.cache_byte_data(path, data)
-        return cached_file
+        return cached_file, real_name, enc
     
 
     def resolve_path(self, path, subtag):
@@ -175,13 +191,25 @@ class Cacher:
             if (not cache_path) or \
                     (entry and is_expired(entry, self.cache_expiration)):
                 #print("Refreshing cache for: " + path + " (" + subtag + ")")
-                cached_file_path = self.read_and_cache(path)
+                cached_file_path, real_name, enc = self.read_and_cache(path)
                 if cache_path:   # need to remove the old cached file
                     os.remove(cache_path)
                 
                 entry = make_entry(path, subtag, cached_file_path, U.current_time_millis())
-                
                 self.add_or_update_entry(entry)
+                
+                # if real_name or enc were detected by raw_create_input via the read_and_cache method
+                # then cache those as well
+                if real_name:
+                    #print("adding real-name: {} for {}".format(real_name, path))
+                    rn_entry = make_entry(path, "real-name", real_name, U.current_time_millis())
+                    self.add_or_update_entry(rn_entry)
+                if enc:
+                    #print("adding enc: {} for {}".format(enc, path))
+                    enc_entry = make_entry(path, "encoding", enc, U.current_time_millis())
+                    self.add_or_update_entry(enc_entry)
+                
+                
                 return cached_file_path
         else:
             if entry and is_expired(entry, self.cache_expiration):
@@ -208,7 +236,7 @@ class Cacher:
         cache_path = entry["cachedata"] if entry else None
         #print("Refreshing cache for: " + path + " (" + subtag + ")")
         
-        cached_file_path = self.read_and_cache(path + " (" + subtag + ")", fp=fp)
+        cached_file_path, _, _ = self.read_and_cache(path + " (" + subtag + ")", fp=fp)
         if cache_path:   # need to remove the old cached file
             os.remove(cache_path)
         entry = make_entry(path, subtag, cached_file_path, U.current_time_millis())
@@ -344,7 +372,7 @@ def data_valid(entry):
     '''Check to see if the entry's cachedata refers to an actual readable file.'''
     if entry["cachedata"] and \
             os.path.isfile(entry["cachedata"]):
-        fp = U.create_input(entry["cachedata"])[0]
+        fp = U.raw_create_input(entry["cachedata"])[0]
         if fp:
             fp.close()
             return True

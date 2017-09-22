@@ -117,7 +117,7 @@ class Data_Source:
         
     @staticmethod
     def connect_using(spec_path):
-        return load_spec(U.create_input(spec_path)[0])   
+        return load_spec(U.create_input(spec_path))   
 
 
     def clear_cache(self = None):
@@ -241,17 +241,17 @@ class Data_Source:
             d.start()
             
             resolved_path = self.cacher.resolve_path(full_path, subtag)
-            fp, new_path, _ = U.create_input(resolved_path)
+            fp = U.create_input(resolved_path)
+            real_name = self.cacher.lookup_entry_data(full_path, "real-name")
+            enc = self.cacher.lookup_entry_data(full_path, "ajflk")
             
-            #print("Full path: {} {}".format(full_path, U.smells_like_zip(full_path)))
-            if (U.smells_like_zip(full_path) or U.smells_like_zip(new_path)) \
-                        and not U.smells_like_url(resolved_path):
+            if U.smells_like_zip(full_path) \
+                    or (real_name and U.smells_like_zip(real_name)):
                 try:
                     zf = ZipFile(resolved_path)
                     members = zf.namelist()
                     
                     if 'file-entry' not in self.option_settings and len(members) is 1:
-                        #print("Selecting file-entry from zip: {}".format(members[0]))
                         self.option_settings['file-entry'] = members[0]
                     
                     if 'file-entry' in self.option_settings and \
@@ -263,9 +263,10 @@ class Data_Source:
                         entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
                         if entry_cached_path:
                             fp.close()
-                            fp, _, _ = U.create_input(entry_cached_path)                        
+                            fp = U.create_input(entry_cached_path)                        
                         else: # not in the cache
                             fp.close()
+                            enc = None
                             fp = zf.open(fe_value)
                             if not self.cacher.add_to_cache(full_path, fe_subtag, fp):
                                 print("something went wrong caching zip file-entry", file=sys.stderr)
@@ -273,7 +274,7 @@ class Data_Source:
                             else:
                                 fp.close()
                                 entry_cached_path = self.cacher.resolve_path(full_path, fe_subtag)
-                                fp, _, _ = U.create_input(entry_cached_path)
+                                fp = U.create_input(entry_cached_path)
     
                     else:
                         raise SinbadError("Specify a file-entry from the ZIP file: {}".format(members))
@@ -286,7 +287,7 @@ class Data_Source:
             for k, v in self.data_infer.options.items():
                 self.data_factory.set_option(k, v)
                 
-            self.data_obj = self.data_factory.load_data(fp)
+            self.data_obj = self.data_factory.load_data(fp, enc)
             self.is_sampled = False
             
             self.__loaded = True
@@ -347,7 +348,7 @@ class Data_Source:
                     usage_info['sample_seed'] = random_seed
                     register_sample(usage_info)
         else: # sample seems to be cached
-            fp, _, _ = U.create_input(sample_path) 
+            fp = U.create_input(sample_path) 
             self.data_obj = json.loads(fp.read().decode())
             self.__loaded = True    # copy these two lines because .load() didn't get called on this path of execution
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
@@ -421,7 +422,7 @@ class Data_Source:
             parsed_paths = None
             field_names = None
     
-            for match in data:
+            for match in data:  # each record of the list is handled as a match
                 if parsed_paths is None:
                     parsed_paths = []
                     field_names = []
@@ -437,7 +438,7 @@ class Data_Source:
                 
                 d = {}
                 for fp, fn in zip(parsed_paths, field_names):
-                    fv = fp.find(match)
+                    fv = fp.find(match)   # field value extracted from this match
                     if not fv or fv == []:
                         raise SinbadError("No data found for field: {}".format(fn))
                     elif len(fv) == 1:
@@ -449,6 +450,8 @@ class Data_Source:
                     else: d[fn] = fv_result
                         
                 collected.append(d)
+            
+            collected = U.collapse_lists(collected)
             
             if len(collected) == 1:
                 only_one = collected[0]
@@ -627,14 +630,21 @@ class Data_Source:
             self.option_settings['file-entry'] = value
         else:
             self.data_factory.set_option(name, value)
+        return self
     
     def set_options(self, opts):
         for k in opts:
             self.set_option(k, opts[k])
+        return self
 
     def set_param(self, name, value):
         if name and value:
             self.param_values[name] = value
+        return self
+    
+    def set_params(self, prms):
+        for k in prms:
+            self.set_param(k, prms[k])
         return self
 
     def __add_param__(self, param):   # a 'protected' method - used by load_spec()
