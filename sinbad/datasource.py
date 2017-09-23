@@ -118,6 +118,12 @@ class Data_Source:
     @staticmethod
     def connect_using(spec_path):
         return load_spec(U.create_input(spec_path))   
+    
+    
+    @staticmethod
+    def connect_load_using(spec_path):
+        ds = load_spec(U.create_input(spec_path))
+        return ds.load()
 
 
     def clear_cache(self = None):
@@ -562,10 +568,13 @@ class Data_Source:
     
     def print_description(self, verbose=False):
         print("-----")
+        
+        url_path = self.get_full_path_url() if self.__ready_to_load() else self.path
+        
         if self.name and self.name is not self.path:
-            print("Data Source: {}\nURL: {}".format(self.name, self.get_full_path_url()))
+            print("Data Source: {}\nURL: {}".format(self.name, url_path))
         else:
-            print("Data Source: {}".format(self.get_full_path_url()))
+            print("Data Source: {}".format(url_path))
         if "file-entry" in self.option_settings:
             print("   (Zip file entry: {})".format(self.option_settings.get("file-entry")))
         if verbose and self.format_type:
@@ -659,7 +668,9 @@ class Data_Source:
     
     def set_cache_timeout(self, value):
         '''Set the cache delay to the given value in seconds '''
-        self.cacher = self.cacher.update_timeout(value * 1000)
+        if value > 0:
+            value = value * 1000   # convert to milliseconds
+        self.cacher = self.cacher.update_timeout(value)
         return self
     
     def set_cache_directory(self, path):
@@ -717,7 +728,7 @@ class Data_Source:
         if self.info_text: spec["description"] = self.info_text
         
         cache_spec = OrderedDict()
-        cache_spec["timeout"] = self.cacher.cache_expiration
+        cache_spec["timeout"] = self.cacher.cache_expiration / 1000
         if self.cacher.cache_directory is not C.__DEFAULT_CACHE_DIR__:
             cache_spec["directory"] = self.cacher.cache_directory
         spec["cache"] = cache_spec
@@ -736,6 +747,10 @@ class Data_Source:
         param_list = []
         for k, p in self.params.items():
             param_list.append( p.export(self.param_values.get(k, None)) )
+        for k, v in self.param_values.items():
+            if k not in self.params:
+                prm = Param(k, "query")
+                param_list.append( prm.export(v) )
         spec["params"] = param_list
         
         if fp:
