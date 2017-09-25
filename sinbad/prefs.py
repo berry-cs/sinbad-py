@@ -119,7 +119,7 @@ class PrefsGUI:
     
 def pref_file_name():
     #prefs_file = os.path.expanduser("~{0}sinbad_prefs.txt".format(os.path.sep))
-    prefs_dir = user_data_dir("Sinbad")
+    prefs_dir = user_data_dir("Sinbad", appauthor=False)
     if not os.path.isdir(prefs_dir):
         os.makedirs(prefs_dir, 0o777, True)
     if not os.path.isdir(prefs_dir):
