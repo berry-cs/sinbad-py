@@ -39,6 +39,7 @@ def launch_usage_collection_info(*args):
     webbrowser.open_new(get_pref("server_base") + "usage.php")
     
 def load_pref_file():
+    '''Returns an OrderedDict'''
     prefs_file = pref_file_name()
     if os.path.isfile(prefs_file):
         with open(prefs_file) as fp:

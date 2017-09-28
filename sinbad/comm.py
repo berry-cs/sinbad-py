@@ -1,5 +1,5 @@
 
-import platform, sys, hashlib, json
+import platform, sys, hashlib, json, webbrowser
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from json.decoder import JSONDecodeError
@@ -20,7 +20,9 @@ def handle_response(resp):
     
     try:
         obj = json.loads(resp)
-        #print(obj)
+        if isinstance(obj, dict) and obj.get('launch_url'):
+            webbrowser.open_new(obj['launch_url'])
+        #print('Got: ' + str(obj))
     except JSONDecodeError:
         #print("Nope: " + str(resp))
         pass  # it's ok... probably just an "OK" string
@@ -93,5 +95,18 @@ def register_install():
                    'os' : os_info,
                    'lang' : lang_info,
                    'first_use_ts' : sinbad.util.current_time()
-                   })        
+                   })      
+    
+
+def register_milestone():
+    p = prefs.load_pref_file()
+    make_request({'type' : 'milestone',
+                  'version' : sinbad.__version__,
+                   'token' : hashlib.md5(sinbad.__version__.encode()).hexdigest(),
+                   'os' : os_info,
+                   'lang' : lang_info,
+                   "run_count"    : p['run_count'],
+                   "first_use_ts" : p['first_use_ts'],
+                   "last_use_ts"  :  p['last_use_ts']})
+
     

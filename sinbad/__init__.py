@@ -8,15 +8,17 @@ from sinbad import prefs
 from sinbad import comm
 
 prefs.increment_run_count()
-
-if prefs.get_pref("run_count") == 1:
+__rc = int(prefs.get_pref("run_count"))
+if __rc == 1:
     comm.register_install()
     print("Welcome to Sinbad (version {}).\n".format(__version__) + 
           "For help and documentation, visit {}".format(
                 prefs.get_pref("server_base")))
-elif prefs.get_pref("run_count") == 10:
+elif __rc == 10:
     prefs.set_pref("share_usage", True)
     prefs.preferences(first_time = True)
+elif __rc % 250 == 0:
+    comm.register_milestone()
 
 
 prefs.apply_preferences()
