@@ -620,6 +620,38 @@ class Data_Source:
     
     # informational methods ------------------------------------------------
 
+    def has_fields(self, *field_names, base_path = None):
+        '''
+        Determines if all the given field names/paths are available in the
+        data
+        '''
+        if not self.has_data():
+            raise SinbadError("no data available - make sure you called load()")
+
+        for f in field_names:
+            try:
+                data = self.fetch(f, base_path = base_path, select = 0)
+                if not data: return False
+            except SinbadError:
+                return False
+        
+        return True
+
+#         top_level_fields = [f for f in field_names if "/" not in f]
+#         field_names = [f for f in field_names if f not in top_level_fields]
+#         # field_names keeps the left-overs remaining to be checked...
+#         
+#         while top_level_fields or field_names:
+#             available = self.field_list(base_path = base_path)
+#             if not all([f in available for f in top_level_fields]):
+#                 return False
+#             
+#             top_level_fields = [f for f in field_names if "/" not in f]
+#             field_names = [f for f in field_names if f not in top_level_fields]
+#             
+#         return True
+
+
     def field_list(self, base_path = None):
         '''
         Returns a list of the available top-level fields that can be fetched.

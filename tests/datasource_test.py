@@ -35,6 +35,23 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(d3, d5)
         
         
+    def test_has_fields(self):
+        ds = DataSource.connect_as("XmL", "http://services.faa.gov/airport/status/ATL")
+        ds.set_param("format", "application/xml").set_cache_timeout(300)
+        ds.load()
+        print(ds.print_description())
+        
+        self.assertTrue(ds.has_fields("Name"))
+        self.assertTrue(ds.has_fields("Name", "State", "Delay", "Weather/Weather"))
+        self.assertTrue(ds.has_fields("Name", "Weather/Meta/Url", "Delay", "Weather/Weather"))
+        self.assertTrue(ds.has_fields("Name", "Weather/Meta/Url", "Delay", "Weather/Weather", "Status/Reason"))
+
+        self.assertFalse(ds.has_fields("Speed"))
+        self.assertFalse(ds.has_fields("Weather/Speed"))
+        self.assertFalse(ds.has_fields("Name", "State", "Delay", "Speed"))
+        self.assertFalse(ds.has_fields("Name", "Weather/Meta/Url", "Delay", "Weather/Speed", "Status/Reason"))
+        self.assertFalse(ds.has_fields("Name", "Weather/Meta/Url", "Speed", "Weather/Weather", "Status/Reason"))
+        
 
 if __name__ == "__main__":
     unittest.main()

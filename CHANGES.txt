@@ -1,3 +1,4 @@
+v0.5b7, October 2, 2017 -- Added has_fields
 v0.5b6, September 21, 2017 -- Further zip-handling improvements; export spec files
 v0.5b5, September 21, 2017 -- Support content-disposition headers, improve handling of zip and csv files
 v0.5b4, September 21, 2017 -- Handle gzip files, better json support
