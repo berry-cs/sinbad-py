@@ -361,7 +361,8 @@ class Data_Source:
                     register_sample(usage_info)
         else: # sample seems to be cached
             fp = U.create_input(sample_path) 
-            self.data_obj = json.loads(fp.read().decode())
+            self.data_obj = json.loads(fp.read().decode(errors='ignore'))
+            self.is_sampled = True
             self.__loaded = True    # copy these two lines because .load() didn't get called on this path of execution
             self.__random_index = None   # this is so that .fetch_random() actually returns the same position, until .load() is called again
         

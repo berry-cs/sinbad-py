@@ -38,7 +38,7 @@ def make_request(post_fields):
     except OSError:
         pass   # allow to timeout/fail silently 
     
-    if result: handle_response(result.read().decode())
+    if result: handle_response(result.read().decode(errors='ignore'))
    
    
 def register_fetch(usage_info):

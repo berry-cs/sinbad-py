@@ -49,8 +49,8 @@ class CSV_Data_Factory(Base_Data_Factory):
         byts = fp.read()
         if byts.startswith(b'\xef\xbb\xbf'): byts = byts[3:] # clear BOM header  
         
-        if encoding: str_data = byts.decode(encoding)
-        else: str_data = byts.decode()
+        if encoding: str_data = byts.decode(encoding, 'ignore')
+        else: str_data = byts.decode(errors='ignore')
         
         has_double_newlines = str_data.find("\n\n") >= 0
         str_data = str_data.replace('\r', '\n')

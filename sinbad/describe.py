@@ -21,7 +21,6 @@ def describe(thing, indent = 0):
             else:
                 return 'list of:\n' + elts
     elif isinstance(thing, dict):
-        elts = { k : describe(v, __incr_ind(indent)) for k, v in thing.items() }
         keys = [ k for k in thing.keys() if k ]
         keys.sort(key=lambda x: x.lower())
         desc = spaces + 'dictionary with {\n'
