@@ -761,7 +761,8 @@ class Data_Source:
         if self.info_text: spec["description"] = self.info_text
         
         cache_spec = OrderedDict()
-        cache_spec["timeout"] = self.cacher.cache_expiration / 1000
+        e = self.cacher.cache_expiration
+        cache_spec["timeout"] = e / 1000 if e > 0 else e
         if self.cacher.cache_directory is not C.__DEFAULT_CACHE_DIR__:
             cache_spec["directory"] = self.cacher.cache_directory
         spec["cache"] = cache_spec
