@@ -117,12 +117,15 @@ class Data_Source:
         
     @staticmethod
     def connect_using(spec_path):
-        return load_spec(U.create_input(spec_path))   
+        fp = U.create_input(spec_path)
+        str = fp.read().decode(errors='ignore')
+        fp.close()
+        return load_spec(str)
     
     
     @staticmethod
     def connect_load_using(spec_path):
-        ds = load_spec(U.create_input(spec_path))
+        ds = Data_Source.connect_using(spec_path)
         return ds.load()
 
 
@@ -903,10 +906,10 @@ class Param:
 ### ----------------------------------------------------------------------
 def load_spec(fp):
     '''
-    Loads a specification file from the given file-like object and
+    Loads a specification file from the given file-like object or string and
     instantiates and prepares a Data_Source object based on that.
     '''
-    spec = json.load(fp)
+    spec = json.loads(fp) if isinstance(fp, str) else json.load(fp)
     if not spec.get("path"):
         raise SinbadError("Invalid specification file")
     
