@@ -822,7 +822,7 @@ class Data_Source:
         '''
         Replace '/'s with '.'s  and add '[*]'s as required by jsonpath_rw
         '''
-        pth = orig_pth.replace("/", ".")
+        pth = orig_pth.strip().strip("/").replace("/", ".")
         splits = pth.split(".")
         if not splits:
             return pth
